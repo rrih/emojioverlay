@@ -50,11 +50,34 @@ const Home: React.FC = () => {
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isDragging) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      setEmojiPosition({ x, y });
+      updateEmojiPosition(e.clientX, e.clientY, e.currentTarget);
     }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    setIsDragging(true);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    setIsDragging(false);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (isDragging) {
+      const touch = e.touches[0];
+      updateEmojiPosition(touch.clientX, touch.clientY, e.currentTarget);
+    }
+  };
+
+  const updateEmojiPosition = (
+    clientX: number,
+    clientY: number,
+    canvas: HTMLCanvasElement
+  ) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    setEmojiPosition({ x, y });
   };
 
   const draw = () => {
@@ -145,6 +168,9 @@ const Home: React.FC = () => {
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchMove}
         style={canvasStyle}
       ></canvas>
       <br />
