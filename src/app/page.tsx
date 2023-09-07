@@ -11,6 +11,7 @@ const Home: React.FC = () => {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const emojiOptions = ["😁", "🥺", "😤", "😭", "😢", "🥲", "😡"];
+  const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,6 +38,23 @@ const Home: React.FC = () => {
     };
 
     reader.readAsDataURL(file);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDragging(true);
+  };
+
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isDragging) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      setEmojiPosition({ x, y });
+    }
   };
 
   const draw = () => {
@@ -124,12 +142,9 @@ const Home: React.FC = () => {
         ref={canvasRef}
         width={600}
         height={400}
-        onClick={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-          setEmojiPosition({ x, y });
-        }}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
         style={canvasStyle}
       ></canvas>
       <br />
@@ -148,7 +163,7 @@ const Home: React.FC = () => {
       <br />
       {downloadUrl && (
         <a href={downloadUrl} download="emoji_image.png">
-          Download Image
+          画像をダウンロードする
         </a>
       )}
     </div>
