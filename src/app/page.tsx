@@ -66,13 +66,6 @@ const Home: React.FC = () => {
     setDownloadUrl(canvas.toDataURL());
   };
 
-  const containerStyle = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "16px",
-  };
-
   const canvasStyle = {
     maxWidth: "100%",
   };
@@ -82,7 +75,14 @@ const Home: React.FC = () => {
   }, [emoji, emojiSize, emojiPosition]);
 
   return (
-    <div style={containerStyle}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "16px",
+      }}
+    >
       <div
         style={{ marginBottom: "16px", display: "flex", alignItems: "center" }}
       >
