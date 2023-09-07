@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
+
+const emojiOptions = ["😁", "🥺", "😤", "😭", "😢", "🥲", "😡"];
 
 const Home: React.FC = () => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -10,7 +13,7 @@ const Home: React.FC = () => {
   const [maxEmojiSize, setMaxEmojiSize] = useState<number>(100);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const emojiOptions = ["😁", "🥺", "😤", "😭", "😢", "🥲", "😡"];
+  const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,6 +40,46 @@ const Home: React.FC = () => {
     };
 
     reader.readAsDataURL(file);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDragging(true);
+  };
+
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isDragging) {
+      updateEmojiPosition(e.clientX, e.clientY, e.currentTarget);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    setIsDragging(true);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    setIsDragging(false);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (isDragging) {
+      const touch = e.touches[0];
+      updateEmojiPosition(touch.clientX, touch.clientY, e.currentTarget);
+    }
+  };
+
+  const updateEmojiPosition = (
+    clientX: number,
+    clientY: number,
+    canvas: HTMLCanvasElement
+  ) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    setEmojiPosition({ x, y });
   };
 
   const draw = () => {
@@ -66,92 +109,82 @@ const Home: React.FC = () => {
     setDownloadUrl(canvas.toDataURL());
   };
 
-  const canvasStyle = {
-    maxWidth: "100%",
-  };
-
   useEffect(() => {
     draw();
   }, [emoji, emojiSize, emojiPosition]);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "16px",
-      }}
-    >
-      <div
-        style={{ marginBottom: "16px", display: "flex", alignItems: "center" }}
-      >
-        <button
-          onClick={handleButtonClick}
-          style={{
-            marginRight: "12px",
-            padding: "8px 16px",
-            background: "#007bff",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
+    <>
+      <h1 className="text-4xl font-bold text-center p-4">emojioverlay</h1>
+      <div className="flex flex-col items-center p-4">
+        <div className="mb-4 flex items-center">
+          <button
+            onClick={handleButtonClick}
+            className="mr-3 py-2 px-4 bg-blue-500 text-white rounded"
+          >
+            Select Image
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageChange}
+            className="hidden"
+          />
+        </div>
+        <canvas
+          ref={canvasRef}
+          width={600}
+          height={400}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchMove={handleTouchMove}
+          className="max-w-full"
+        ></canvas>
+        <br />
+        <select
+          value={emoji}
+          onChange={(e) => {
+            setEmoji(e.target.value);
+            draw();
           }}
         >
-          Upload Image
-        </button>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleImageChange}
-          style={{ display: "none" }}
-        />
+          {emojiOptions.map((option, index) => (
+            <option key={index} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+        <br />
+        <label>
+          size:
+          <input
+            type="range"
+            min="10"
+            max={maxEmojiSize}
+            value={emojiSize}
+            onChange={(e) => {
+              setEmojiSize(Number(e.target.value));
+            }}
+          />
+        </label>
+        <br />
+        {downloadUrl && (
+          <a
+            href={downloadUrl}
+            download="emoji_image.png"
+            className="text-blue-600"
+          >
+            画像をダウンロードする
+          </a>
+        )}
       </div>
-      <select
-        value={emoji}
-        onChange={(e) => {
-          setEmoji(e.target.value);
-          draw();
-        }}
-        style={{ marginBottom: "16px" }}
-      >
-        {emojiOptions.map((option, index) => (
-          <option key={index} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <canvas
-        ref={canvasRef}
-        width={600}
-        height={400}
-        onClick={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-          setEmojiPosition({ x, y });
-        }}
-        style={canvasStyle}
-      ></canvas>
-      <br />
-      <label>
-        Emoji size:
-        <input
-          type="range"
-          min="10"
-          max={maxEmojiSize}
-          value={emojiSize}
-          onChange={(e) => {
-            setEmojiSize(Number(e.target.value));
-          }}
-        />
-      </label>
-      <br />
-      {downloadUrl && (
-        <a href={downloadUrl} download="emoji_image.png">
-          Download Image
-        </a>
-      )}
-    </div>
+      <footer className="text-center">
+        <Link href={`https://github.com/rrih`}>@rrih</Link>
+      </footer>
+    </>
   );
 };
 
