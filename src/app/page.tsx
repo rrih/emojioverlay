@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
+
+const emojiOptions = ["😁", "🥺", "😤", "😭", "😢", "🥲", "😡"];
 
 const Home: React.FC = () => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -10,7 +13,6 @@ const Home: React.FC = () => {
   const [maxEmojiSize, setMaxEmojiSize] = useState<number>(100);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const emojiOptions = ["😁", "🥺", "😤", "😭", "😢", "🥲", "😡"];
   const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -107,36 +109,16 @@ const Home: React.FC = () => {
     setDownloadUrl(canvas.toDataURL());
   };
 
-  const canvasStyle = {
-    maxWidth: "100%",
-  };
-
   useEffect(() => {
     draw();
   }, [emoji, emojiSize, emojiPosition]);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "16px",
-      }}
-    >
-      <div
-        style={{ marginBottom: "16px", display: "flex", alignItems: "center" }}
-      >
+    <div className="flex flex-col items-center p-4">
+      <div className="mb-4 flex items-center">
         <button
           onClick={handleButtonClick}
-          style={{
-            marginRight: "12px",
-            padding: "8px 16px",
-            background: "#007bff",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-          }}
+          className="mr-3 py-2 px-4 bg-blue-500 text-white rounded"
         >
           Upload Image
         </button>
@@ -144,7 +126,7 @@ const Home: React.FC = () => {
           type="file"
           ref={fileInputRef}
           onChange={handleImageChange}
-          style={{ display: "none" }}
+          className="hidden"
         />
       </div>
       <select
@@ -153,7 +135,7 @@ const Home: React.FC = () => {
           setEmoji(e.target.value);
           draw();
         }}
-        style={{ marginBottom: "16px" }}
+        className="mb-4"
       >
         {emojiOptions.map((option, index) => (
           <option key={index} value={option}>
@@ -171,11 +153,11 @@ const Home: React.FC = () => {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchMove={handleTouchMove}
-        style={canvasStyle}
+        className="max-w-full"
       ></canvas>
       <br />
       <label>
-        Emoji size:
+        size:
         <input
           type="range"
           min="10"
@@ -188,7 +170,11 @@ const Home: React.FC = () => {
       </label>
       <br />
       {downloadUrl && (
-        <a href={downloadUrl} download="emoji_image.png">
+        <a
+          href={downloadUrl}
+          download="emoji_image.png"
+          className="text-blue-600"
+        >
           画像をダウンロードする
         </a>
       )}
