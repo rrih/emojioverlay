@@ -3,7 +3,30 @@
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 
-const emojiOptions = ["😁", "🥺", "😤", "😭", "😢", "🥲", "😡"];
+// const emojiOptions = [
+//   "😁",
+//   "🥺",
+//   "😤",
+//   "😭",
+//   "😢",
+//   "🥲",
+//   "😡",
+//   "https://emoji-img.s3.ap-northeast-1.amazonaws.com/svg/1f601.svg",
+// ];
+// 画像とテキストを含むオプションの配列
+const emojiOptions = [
+  { label: "😁", value: "😁" },
+  { label: "🥺", value: "🥺" },
+  { label: "😤", value: "😤" },
+  { label: "😭", value: "😭" },
+  { label: "😢", value: "😢" },
+  { label: "🥲", value: "🥲" },
+  { label: "😡", value: "😡" },
+  {
+    label: "😁（いにしえの姿）",
+    value: "https://emoji-img.s3.ap-northeast-1.amazonaws.com/svg/1f601.svg",
+  },
+];
 
 const Home: React.FC = () => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -14,6 +37,10 @@ const Home: React.FC = () => {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedEmoji, setSelectedEmoji] = useState(emojiOptions[0]);
+
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,6 +98,12 @@ const Home: React.FC = () => {
     }
   };
 
+  // カスタムドロップダウンの項目をクリックしたときのハンドラ
+  const handleSelectEmoji = (value: string) => {
+    setSelectedEmoji(value);
+    // ここで他の処理（例えば、キャンバスに絵文字/画像を描画）も行う
+  };
+
   const updateEmojiPosition = (
     clientX: number,
     clientY: number,
@@ -102,8 +135,23 @@ const Home: React.FC = () => {
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
     }
 
-    ctx.font = `${emojiSize}px Arial`;
-    ctx.fillText(emoji, emojiPosition.x, emojiPosition.y);
+    // 選択されたオプションがSVG画像のURLかどうかを判断
+    if (emoji.startsWith("http")) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(
+          img,
+          emojiPosition.x,
+          emojiPosition.y,
+          emojiSize,
+          emojiSize
+        );
+      };
+      img.src = emoji;
+    } else {
+      ctx.font = `${emojiSize}px Arial`;
+      ctx.fillText(emoji, emojiPosition.x, emojiPosition.y);
+    }
 
     // ダウンロード用URLを更新
     setDownloadUrl(canvas.toDataURL());
@@ -113,74 +161,97 @@ const Home: React.FC = () => {
     draw();
   }, [emoji, emojiSize, emojiPosition]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownRef]);
+
   return (
     <>
       <h1 className="text-4xl font-bold text-center p-4">emojioverlay</h1>
-      <div className="flex flex-col items-center p-4">
-        <div className="mb-4 flex items-center">
-          <button
-            onClick={handleButtonClick}
-            className="mr-3 py-2 px-4 bg-blue-500 text-white rounded"
-          >
-            Select Image
-          </button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleImageChange}
-            className="hidden"
-          />
-        </div>
-        <canvas
-          ref={canvasRef}
-          width={600}
-          height={400}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseMove={handleMouseMove}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          onTouchMove={handleTouchMove}
-          className="max-w-full"
-        ></canvas>
-        <br />
-        <select
-          value={emoji}
-          onChange={(e) => {
-            setEmoji(e.target.value);
-            draw();
-          }}
-        >
-          {emojiOptions.map((option, index) => (
-            <option key={index} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-        <br />
-        <label>
-          size:
-          <input
-            type="range"
-            min="10"
-            max={maxEmojiSize}
-            value={emojiSize}
-            onChange={(e) => {
-              setEmojiSize(Number(e.target.value));
-            }}
-          />
-        </label>
-        <br />
-        {downloadUrl && (
-          <a
-            href={downloadUrl}
-            download="emoji_image.png"
-            className="text-blue-600"
-          >
-            画像をダウンロードする
-          </a>
+      <div ref={dropdownRef} className="relative">
+        <button onClick={() => setIsOpen(!isOpen)} className="button">
+          {selectedEmoji.value.startsWith("http") ? (
+            <img
+              src={selectedEmoji.value}
+              alt="Selected emoji"
+              style={{ width: 30, height: 30 }}
+            />
+          ) : (
+            <span>{selectedEmoji.label}</span>
+          )}
+          <span>▼</span>
+        </button>
+        {isOpen && (
+          <div className="dropdown-menu absolute z-10">
+            {emojiOptions.map((option, index) => (
+              <div
+                key={index}
+                onClick={() => {
+                  setSelectedEmoji(option);
+                  setIsOpen(false);
+                }}
+                className="dropdown-item flex items-center cursor-pointer"
+              >
+                {option.value.startsWith("http") ? (
+                  <img
+                    src={option.value}
+                    alt={option.label}
+                    style={{ width: 30, height: 30, marginRight: 8 }}
+                  />
+                ) : (
+                  <span style={{ marginRight: 8 }}>{option.label}</span>
+                )}
+                {option.label}
+              </div>
+            ))}
+          </div>
         )}
       </div>
+      <br />
+      <label>
+        size:
+        <input
+          type="range"
+          min="10"
+          max={maxEmojiSize}
+          value={emojiSize}
+          onChange={(e) => {
+            setEmojiSize(Number(e.target.value));
+          }}
+        />
+      </label>
+      <br />
+      <canvas
+        ref={canvasRef}
+        width={600}
+        height={400}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchMove}
+        className="max-w-full"
+      ></canvas>
+      {downloadUrl && (
+        <a
+          href={downloadUrl}
+          download="emoji_image.png"
+          className="text-blue-600"
+        >
+          画像をダウンロードする
+        </a>
+      )}
+      {/* </div> */}
       <footer className="text-center">
         <Link href={`https://github.com/rrih`}>@rrih</Link>
       </footer>
